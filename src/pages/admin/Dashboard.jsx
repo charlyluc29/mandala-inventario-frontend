@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Package, Building2, ArrowUpRight } from "lucide-react";
-import { apiFetch } from "../../services/api";
+import { apiFetch } from "../../Services/api";
 import { getUserRole } from "../../utils/auth"; // <-- ruta correcta
 
 function Dashboard() {

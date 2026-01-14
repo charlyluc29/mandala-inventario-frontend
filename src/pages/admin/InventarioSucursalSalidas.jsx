@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { apiFetch } from "../../services/api"
+import { apiFetch } from "../../Services/api"
 
 function InventarioSucursalSalidas({ sucursal }) {
   const [salidas, setSalidas] = useState([])

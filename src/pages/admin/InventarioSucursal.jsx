@@ -1,7 +1,7 @@
 import { useState } from "react"
 import InventarioSucursalInventario from "./InventarioSucursalInventario"
 import InventarioSucursalTransferencia from "./InventarioSucursalTransferencia"
-import { apiFetch } from "../../services/api"
+import { apiFetch } from "../../Services/api"
 import { Package, ArrowUpRight, PlusCircle } from "lucide-react"
 
 function InventarioSucursal({ sucursal, volver }) {
