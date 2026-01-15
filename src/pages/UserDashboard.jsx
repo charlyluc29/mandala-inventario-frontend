@@ -92,7 +92,7 @@ export default function UserDashboard({ logout }) {
           <img
             src="/logo-mandala 3.png"
             alt="Mandala Group"
-            className="h-11 w-auto object-contain bg-amber-400/80 p-1.5 rounded-md ring-1 ring-zinc-600"
+            className="h-11 w-auto object-contain p-1.6"
           />
           <div className="leading-tight">
             <h1 className="text-white font-semibold text-lg">
