@@ -95,13 +95,21 @@ export default function UserDashboard({ logout }) {
             className="h-11 w-auto object-contain p-1.6"
           />
           <div className="leading-tight">
-            <h1 className="text-white font-semibold text-lg">
-              Mandala Group
-            </h1>
-            <span className="text-xs tracking-widest text-amber-400">
-              HOSPITALITY
-            </span>
-          </div>
+  <h1
+    className="text-white font-semibold text-lg"
+    translate="no"
+  >
+    Mandala Group
+  </h1>
+
+  <span
+    className="text-xs tracking-widest text-amber-400"
+    translate="no"
+  >
+    HOSPITALITY
+  </span>
+</div>
+
         </div>
 
         {/* USUARIO */}
