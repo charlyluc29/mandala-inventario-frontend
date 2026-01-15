@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { apiFetch } from "../services/api" // IMPORTANTE: en minúsculas
+import { apiFetch } from "../Services/api" // IMPORTANTE: en minúsculas
 import {
   Package,
   ArrowUpRight,
