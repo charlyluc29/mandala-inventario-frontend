@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { apiFetch } from "../Services/api"
+import { apiFetch } from "../services/api" // IMPORTANTE: en minúsculas
 import {
   Package,
   ArrowUpRight,
@@ -18,7 +18,9 @@ import UserTransferenciasEnviadas from "./user/UserTransferenciasEnviadas"
 
 export default function UserDashboard({ logout }) {
   const navigate = useNavigate()
-  const [isOpen, setIsOpen] = useState(true)
+
+  // 🔹 Sidebar cerrado por defecto (móvil)
+  const [isOpen, setIsOpen] = useState(false)
   const [seccion, setSeccion] = useState("inventario")
   const [sucursal, setSucursal] = useState(null)
   const [loadingSucursal, setLoadingSucursal] = useState(true)
@@ -45,7 +47,7 @@ export default function UserDashboard({ logout }) {
         navigate("/")
       })
       .finally(() => setLoadingSucursal(false))
-  }, [sucursalId])
+  }, [sucursalId, logout, navigate])
 
   const itemClass = (active) =>
     `flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition
@@ -61,106 +63,133 @@ export default function UserDashboard({ logout }) {
   }
 
   return (
-    <div className="min-h-screen flex bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen flex bg-zinc-50 text-zinc-900 relative">
+
+      {/* OVERLAY (solo móvil) */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
       {/* SIDEBAR */}
       <aside
-        className={`${
-          isOpen ? "w-64" : "w-16"
-        } bg-zinc-900 p-3 flex flex-col border-r border-zinc-800 transition-all duration-300`}
+        className={`
+          fixed lg:relative z-50
+          inset-y-0 left-0
+          w-64
+          bg-zinc-900 p-3
+          flex flex-col
+          border-r border-zinc-800
+          transition-transform duration-300
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:translate-x-0
+        `}
       >
-        {/* LOGO + NOMBRE */}
-        <div
-          className={`flex items-center gap-3 px-3 py-4 mb-6 ${
-            isOpen ? "justify-start" : "justify-center"
-          }`}
-        >
+        {/* LOGO */}
+        <div className="flex items-center gap-3 px-3 py-4 mb-6">
           <img
             src="/logo-mandala 3.png"
             alt="Mandala Group"
             className="h-11 w-auto object-contain bg-amber-400/80 p-1.5 rounded-md ring-1 ring-zinc-600"
           />
-          {isOpen && (
-            <div className="leading-tight">
-              <h1 className="text-white font-semibold text-lg">
-                Mandala Group
-              </h1>
-              <span className="text-xs tracking-widest text-amber-400">
-                HOSPITALITY
-              </span>
-            </div>
-          )}
+          <div className="leading-tight">
+            <h1 className="text-white font-semibold text-lg">
+              Mandala Group
+            </h1>
+            <span className="text-xs tracking-widest text-amber-400">
+              HOSPITALITY
+            </span>
+          </div>
         </div>
 
-        {/* USUARIO + SUCURSAL */}
-        <div className="mb-6">
+        {/* USUARIO */}
+        <div className="mb-6 px-2">
           <div className="flex items-center gap-2">
-            <Users size={22} className="text-purple-500" />
-            {isOpen && <span className="text-white font-semibold">Usuario</span>}
+            <Users size={20} className="text-purple-500" />
+            <span className="text-white font-semibold">Usuario</span>
           </div>
-          {!loadingSucursal && isOpen && (
+
+          {!loadingSucursal && (
             <p className="text-sm text-gray-200 mt-1">
-              Sucursal: <span className="font-semibold text-white">{sucursal?.nombre}</span>
+              Sucursal:{" "}
+              <span className="font-semibold text-white">
+                {sucursal?.nombre}
+              </span>
             </p>
           )}
         </div>
-
-        {/* TOGGLE */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="text-gray-400 hover:text-white mb-6 flex items-center gap-2 px-2"
-        >
-          <Menu size={22} />
-          {isOpen && <span className="text-white font-semibold">Menu</span>}
-        </button>
 
         {/* MENU */}
         <nav className="flex-1 space-y-1">
           <div
             className={itemClass(seccion === "inventario")}
-            onClick={() => setSeccion("inventario")}
+            onClick={() => {
+              setSeccion("inventario")
+              setIsOpen(false)
+            }}
           >
             <Package size={18} />
-            {isOpen && "Mi inventario"}
+            Mi inventario
           </div>
 
           <div
             className={itemClass(seccion === "transferir")}
-            onClick={() => setSeccion("transferir")}
+            onClick={() => {
+              setSeccion("transferir")
+              setIsOpen(false)
+            }}
           >
             <ArrowUpRight size={18} />
-            {isOpen && "Enviar transferencia"}
+            Enviar transferencia
           </div>
 
           <div
             className={itemClass(seccion === "entrantes")}
-            onClick={() => setSeccion("entrantes")}
+            onClick={() => {
+              setSeccion("entrantes")
+              setIsOpen(false)
+            }}
           >
             <Inbox size={18} />
-            {isOpen && "Transferencias entrantes"}
+            Transferencias entrantes
           </div>
 
           <div
             className={itemClass(seccion === "enviadas")}
-            onClick={() => setSeccion("enviadas")}
+            onClick={() => {
+              setSeccion("enviadas")
+              setIsOpen(false)
+            }}
           >
             <ArrowUp size={18} />
-            {isOpen && "Transferencias enviadas"}
+            Transferencias enviadas
           </div>
         </nav>
 
         {/* LOGOUT */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition mt-6 justify-center md:justify-start px-2"
+          className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition mt-6 px-3"
         >
           <LogOut size={18} />
-          {isOpen && "Cerrar sesión"}
+          Cerrar sesión
         </button>
       </aside>
 
       {/* MAIN */}
-      <main className="flex-1 p-10 overflow-y-auto">
+      <main className="flex-1 p-4 lg:p-10 overflow-y-auto">
+
+        {/* BOTÓN MENÚ (solo móvil) */}
+        <button
+          onClick={() => setIsOpen(true)}
+          className="lg:hidden mb-4 flex items-center gap-2 text-zinc-700"
+        >
+          <Menu size={22} />
+          Menú
+        </button>
+
         {loadingSucursal && (
           <div className="bg-slate-800 p-6 rounded-xl shadow text-gray-400">
             Cargando información de la sucursal...
@@ -169,8 +198,12 @@ export default function UserDashboard({ logout }) {
 
         {!loadingSucursal && (
           <div className="space-y-8">
-            {seccion === "inventario" && <UserInventario sucursal={sucursal} />}
-            {seccion === "transferir" && <UserTransferencia sucursal={sucursal} />}
+            {seccion === "inventario" && (
+              <UserInventario sucursal={sucursal} />
+            )}
+            {seccion === "transferir" && (
+              <UserTransferencia sucursal={sucursal} />
+            )}
             {seccion === "entrantes" && <UserTransferenciasEntrantes />}
             {seccion === "enviadas" && <UserTransferenciasEnviadas />}
           </div>
