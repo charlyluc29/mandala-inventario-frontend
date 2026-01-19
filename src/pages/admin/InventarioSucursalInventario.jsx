@@ -148,7 +148,7 @@ function InventarioSucursalInventario({ sucursal }) {
                   {item.producto?.modelo || "N/A"}
                 </td>
 
-                <td className="p-2 font-bold">
+                <td className="p-2 font-bold"translate="no">
                   {item.cantidad === 0 ? "SIN STOCK" : item.cantidad}
                 </td>
               </tr>

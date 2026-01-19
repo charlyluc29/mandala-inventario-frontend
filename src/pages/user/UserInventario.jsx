@@ -130,7 +130,7 @@ function UserInventario() {
                 <td className="p-2 border-r border-gray-300 capitalize">
                   {item.producto.estado}
                 </td>
-                <td className="p-2 font-semibold">
+                <td className="p-2 font-semibold"translate="no">
                   {item.cantidad === 0 ? "SIN STOCK" : item.cantidad}
                 </td>
               </tr>
