@@ -29,7 +29,7 @@ function Dashboard() {
     <div className="space-y-6">
       {/* Título */}
       <div>
-        <h1 className="text-4xl font-bold text-slate-800">Dashboard</h1>
+        <h1 className="text-4xl font-bold text-slate-800 " translate="no">Dashboard</h1>
         <p className="text-slate-600">Resumen general del sistema</p>
       </div>
 

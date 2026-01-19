@@ -225,7 +225,7 @@ function InventarioGeneral() {
               <td className="p-2">{i.producto.nombre}</td>
               <td className="p-2">{i.producto.caracteristicas}</td>
 
-              <td className="p-2 font-bold">
+              <td className="p-2 font-bold" translate="no">
                 {i.cantidad === 0 ? "SIN STOCK" : i.cantidad}
               </td>
 
