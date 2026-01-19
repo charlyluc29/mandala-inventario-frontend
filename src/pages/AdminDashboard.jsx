@@ -17,7 +17,7 @@ import MovimientosGeneral from "./admin/MovimientosGeneral"
 import Usuarios from "./admin/Usuarios"
 
 function AdminDashboard({ logout }) {
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(false)
   const [section, setSection] = useState("home")
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState(null)
 
@@ -30,61 +30,54 @@ function AdminDashboard({ logout }) {
      }`
 
   return (
-    <div className="min-h-screen flex bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen flex bg-zinc-50 text-zinc-900 relative">
+
+      {/* OVERLAY (solo móvil) */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
       {/* SIDEBAR */}
       <aside
-        className={`${
-          isOpen ? "w-64" : "w-16"
-        } bg-zinc-900 p-3 flex flex-col border-r border-zinc-800 transition-all duration-300`}
+        className={`
+          fixed lg:relative z-50
+          inset-y-0 left-0
+          w-64
+          bg-zinc-900 p-3
+          flex flex-col
+          border-r border-zinc-800
+          transition-transform duration-300
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:translate-x-0
+        `}
       >
-
         {/* LOGO */}
-       
-          {/* LOGO + NOMBRE */}
-<div
-  className={`flex items-center gap-3 px-3 py-4 mb-6 ${
-    isOpen ? "justify-start" : "justify-center"
-  }`}
->
-  {/* LOGO */}
- <img
-  src="/logo-mandala 3.png"
-  alt="Mandala Group"
-  className="
-    h-11 w-auto object-contain
-    p-1.6
-  "
-/>
-
-
-
-  {/* TEXTO */}
-  {isOpen && (
-    <div className="leading-tight">
-      <h1 className="text-white font-semibold text-lg">
-        Mandala Group
-      </h1>
-      <span className="text-xs tracking-widest text-amber-400">
-        HOSPITALITY
-      </span>
-    </div>
-  )}
-</div>
-
-
-        {/* TOGGLE */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="text-gray-400 hover:text-white mb-6 flex items-center gap-2 px-2"
-        >
-          <Menu size={22} />
-          {isOpen && (
-            <span className="text-white font-semibold">
-              User: Admin
+        <div className="flex items-center gap-3 px-3 py-4 mb-6">
+          <img
+            src="/logo-mandala 3.png"
+            alt="Mandala Group"
+            className="h-11 w-auto object-contain p-1.5"
+          />
+          <div className="leading-tight">
+            <h1 className="text-white font-semibold text-lg" translate="no">
+              Mandala Group
+            </h1>
+            <span
+              className="text-xs tracking-widest text-amber-400"
+              translate="no"
+            >
+              HOSPITALITY
             </span>
-          )}
-        </button>
+          </div>
+        </div>
+
+        {/* USUARIO */}
+        <div className="mb-6 px-2 text-white font-semibold">
+          Usuario: Admin
+        </div>
 
         {/* MENU */}
         <nav className="flex-1 space-y-1">
@@ -94,10 +87,11 @@ function AdminDashboard({ logout }) {
             onClick={() => {
               setSection("home")
               setSucursalSeleccionada(null)
+              setIsOpen(false)
             }}
           >
             <LayoutDashboard size={18} />
-            {isOpen && "Dashboard"}
+            Dashboard
           </div>
 
           <div
@@ -105,10 +99,11 @@ function AdminDashboard({ logout }) {
             onClick={() => {
               setSection("sucursales")
               setSucursalSeleccionada(null)
+              setIsOpen(false)
             }}
           >
             <Building2 size={18} />
-            {isOpen && "Sucursales"}
+            Sucursales
           </div>
 
           <div
@@ -116,10 +111,11 @@ function AdminDashboard({ logout }) {
             onClick={() => {
               setSection("inventarioGeneral")
               setSucursalSeleccionada(null)
+              setIsOpen(false)
             }}
           >
             <Package size={18} />
-            {isOpen && "Inventario General"}
+            Inventario General
           </div>
 
           <div
@@ -127,10 +123,11 @@ function AdminDashboard({ logout }) {
             onClick={() => {
               setSection("movimientos")
               setSucursalSeleccionada(null)
+              setIsOpen(false)
             }}
           >
             <BarChart3 size={18} />
-            {isOpen && "Movimientos"}
+            Movimientos
           </div>
 
           <div
@@ -138,10 +135,11 @@ function AdminDashboard({ logout }) {
             onClick={() => {
               setSection("usuarios")
               setSucursalSeleccionada(null)
+              setIsOpen(false)
             }}
           >
             <Users size={18} />
-            {isOpen && "Usuarios"}
+            Usuarios
           </div>
 
         </nav>
@@ -149,19 +147,29 @@ function AdminDashboard({ logout }) {
         {/* LOGOUT */}
         <button
           onClick={logout}
-          className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition mt-6 justify-center md:justify-start px-2"
+          className="flex items-center gap-3 text-gray-400 hover:text-red-400 transition mt-6 px-3"
         >
           <LogOut size={18} />
-          {isOpen && "Cerrar sesión"}
+          Cerrar sesión
         </button>
       </aside>
 
       {/* MAIN */}
-      <main className="flex-1 p-10">
+      <main className="flex-1 p-4 lg:p-10 overflow-y-auto">
+
+        {/* BOTÓN MENÚ (solo móvil) */}
+        <button
+          onClick={() => setIsOpen(true)}
+          className="lg:hidden mb-4 flex items-center gap-2 text-zinc-700"
+        >
+          <Menu size={22} />
+          Menú
+        </button>
+
         {section === "home" && <Home />}
 
         {section === "sucursales" && !sucursalSeleccionada && (
-          <Sucursales onSelectSucursal={(s) => setSucursalSeleccionada(s)} />
+          <Sucursales onSelectSucursal={setSucursalSeleccionada} />
         )}
 
         {sucursalSeleccionada && (
@@ -172,9 +180,7 @@ function AdminDashboard({ logout }) {
         )}
 
         {section === "inventarioGeneral" && <InventarioGeneral />}
-
         {section === "movimientos" && <MovimientosGeneral />}
-
         {section === "usuarios" && <Usuarios />}
       </main>
     </div>
