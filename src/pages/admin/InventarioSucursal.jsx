@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import InventarioSucursalInventario from "./InventarioSucursalInventario"
 import InventarioSucursalTransferencia from "./InventarioSucursalTransferencia"
 import { apiFetch } from "../../Services/api"
@@ -6,6 +6,8 @@ import { Package, ArrowUpRight, PlusCircle } from "lucide-react"
 
 function InventarioSucursal({ sucursal, volver }) {
   const [seccion, setSeccion] = useState("inventario")
+
+  const esMantenimiento = sucursal?.tipo === "mantenimiento"
 
   const [form, setForm] = useState({
     codigo: "",
@@ -17,12 +19,24 @@ function InventarioSucursal({ sucursal, volver }) {
     cantidad: "",
   })
 
+  // 🔒 Si es mantenimiento, nunca permitir "nuevo"
+  useEffect(() => {
+    if (esMantenimiento && seccion === "nuevo") {
+      setSeccion("inventario")
+    }
+  }, [esMantenimiento, seccion])
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
   const handleCrearProducto = async (e) => {
     e.preventDefault()
+
+    if (esMantenimiento) {
+      alert("No se pueden crear productos en mantenimiento")
+      return
+    }
 
     try {
       await apiFetch("/inventario/nuevo", {
@@ -60,15 +74,23 @@ function InventarioSucursal({ sucursal, volver }) {
 
   return (
     <div className="px-4">
-      {/* Volver */}
-      <button
-        onClick={volver}
-        className="mb-4 text-blue-900/90 hover:underline"
-      >
-        ← Volver a sucursales
-      </button>
+      {volver && (
+  <button
+    onClick={volver}
+    className="mb-4 text-blue-900/90 hover:underline"
+  >
+    ← Volver a sucursales
+  </button>
+)}
 
-      <h1 className="text-3xl font-bold mb-6">{sucursal.nombre}</h1>
+      <h1 className="text-3xl font-bold mb-6">
+        {sucursal.nombre}
+        {esMantenimiento && (
+          <span className="ml-3 text-sm text-orange-600 font-semibold">
+            (En reparación)
+          </span>
+        )}
+      </h1>
 
       {/* MENÚ */}
       <div className="flex flex-wrap gap-4 mb-8">
@@ -96,29 +118,36 @@ function InventarioSucursal({ sucursal, volver }) {
           Transferir productos
         </button>
 
-        <button
-          onClick={() => setSeccion("nuevo")}
-          className={`flex items-center gap-2 px-5 py-2 rounded-xl font-semibold transition 
-            ${seccion === "nuevo"
-              ? "bg-gradient-to-r from-green-800/90 to-green-800/90 shadow-lg text-white"
-              : "bg-gray-700 hover:bg-gray-600 text-gray-200"
-            }`}
-        >
-          <PlusCircle size={18} />
-          Nuevo producto
-        </button>
+        {/* ❌ OCULTO EN MANTENIMIENTO */}
+        {!esMantenimiento && (
+          <button
+            onClick={() => setSeccion("nuevo")}
+            className={`flex items-center gap-2 px-5 py-2 rounded-xl font-semibold transition 
+              ${seccion === "nuevo"
+                ? "bg-gradient-to-r from-green-800/90 to-green-800/90 shadow-lg text-white"
+                : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+              }`}
+          >
+            <PlusCircle size={18} />
+            Nuevo producto
+          </button>
+        )}
       </div>
 
       {/* CONTENIDO */}
       {seccion === "inventario" && (
-        <InventarioSucursalInventario sucursal={sucursal} />
+        <InventarioSucursalInventario
+          sucursal={sucursal}
+          soloLectura={esMantenimiento}
+        />
       )}
 
       {seccion === "transferir" && (
         <InventarioSucursalTransferencia sucursal={sucursal} />
       )}
 
-      {seccion === "nuevo" && (
+      {/* ❌ BLOQUEADO EN MANTENIMIENTO */}
+      {seccion === "nuevo" && !esMantenimiento && (
         <div className="flex justify-center items-center py-1">
           <form
             onSubmit={handleCrearProducto}

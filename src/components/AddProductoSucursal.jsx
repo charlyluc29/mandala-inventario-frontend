@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { apiFetch } from "../services/api"
+import { apiFetch } from "../Services/api"
 
 function AddProductoSucursal({ sucursalId, onAdded }) {
   const [productos, setProductos] = useState([])

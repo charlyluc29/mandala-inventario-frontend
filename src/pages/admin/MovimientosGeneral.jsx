@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { apiFetch } from "../../Services/api"
+import * as XLSX from "xlsx"
 
 function MovimientosGeneral() {
   const [movimientos, setMovimientos] = useState([])
@@ -59,39 +60,29 @@ function MovimientosGeneral() {
   }
 
   // ===============================
-  // Exportar CSV
+  // Exportar Excel
   // ===============================
-  const exportarCSV = () => {
-    const headers = [
-      "Fecha",
-      "Producto",
-      "Tipo",
-      "Cantidad",
-      "Origen",
-      "Destino",
-      "Usuario"
-    ]
+  const exportarExcel = () => {
+    const data = movimientosFiltrados.map(m => ({
+      Fecha: new Date(m.fecha).toLocaleString(),
+      Producto: m.producto?.nombre || "",
+      Tipo: getTipo(m),
+      Cantidad: m.cantidad,
+      Origen: m.sucursalOrigen?.nombre || "",
+      Destino: m.sucursalDestino?.nombre || "",
+      Usuario: getUsuario(m)
+    }))
 
-    const rows = movimientosFiltrados.map(m => [
-      new Date(m.fecha).toLocaleString(),
-      m.producto?.nombre || "",
-      getTipo(m),
-      m.cantidad,
-      m.sucursalOrigen?.nombre || "",
-      m.sucursalDestino?.nombre || "",
-      getUsuario(m)
-    ])
+    const worksheet = XLSX.utils.json_to_sheet(data)
+    const workbook = XLSX.utils.book_new()
 
-    let csv = headers.join(",") + "\n"
-    csv += rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n")
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Movimientos"
+    )
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-
-    const link = document.createElement("a")
-    link.href = url
-    link.download = "movimientos.csv"
-    link.click()
+    XLSX.writeFile(workbook, "movimientos.xlsx")
   }
 
   return (
@@ -108,6 +99,7 @@ function MovimientosGeneral() {
           className="p-2 rounded bg-slate-800 text-white"
         >
           <option value="">Todas las sucursales</option>
+
           {sucursales.map(s => (
             <option key={s._id} value={s._id}>
               {s.nombre}
@@ -116,10 +108,10 @@ function MovimientosGeneral() {
         </select>
 
         <button
-          onClick={exportarCSV}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-semibold"
+          onClick={exportarExcel}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-semibold text-white"
         >
-          Exportar CSV
+          Exportar Excel
         </button>
       </div>
 
@@ -140,25 +132,34 @@ function MovimientosGeneral() {
 
           <tbody>
             {movimientosFiltrados.map(m => (
-              <tr key={m._id} className="border-b border-slate-700">
+              <tr
+                key={m._id}
+                className="border-b border-slate-700"
+              >
                 <td className="p-2">
                   {new Date(m.fecha).toLocaleString()}
                 </td>
+
                 <td className="p-2">
                   {m.producto?.nombre || "—"}
                 </td>
+
                 <td className="p-2 font-semibold">
                   {getTipo(m)}
                 </td>
+
                 <td className="p-2 font-bold">
                   {m.cantidad}
                 </td>
+
                 <td className="p-2">
                   {m.sucursalOrigen?.nombre || "—"}
                 </td>
+
                 <td className="p-2">
                   {m.sucursalDestino?.nombre || "—"}
                 </td>
+
                 <td className="p-2">
                   {getUsuario(m)}
                 </td>
@@ -167,7 +168,10 @@ function MovimientosGeneral() {
 
             {movimientosFiltrados.length === 0 && (
               <tr>
-                <td colSpan="7" className="p-4 text-center text-slate-500">
+                <td
+                  colSpan="7"
+                  className="p-4 text-center text-slate-500"
+                >
                   No hay movimientos
                 </td>
               </tr>

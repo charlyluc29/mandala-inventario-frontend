@@ -10,7 +10,13 @@ function Sucursales({ onSelectSucursal }) {
     const cargarSucursales = async () => {
       try {
         const data = await apiFetch("/sucursales")
-        setSucursales(data)
+
+        // ⛔ sacar mantenimiento de la vista normal
+        const sucursalesNormales = data.filter(
+          s => s.tipo !== "mantenimiento"
+        )
+
+        setSucursales(sucursalesNormales)
       } catch (err) {
         console.error("Error al cargar sucursales:", err)
       }

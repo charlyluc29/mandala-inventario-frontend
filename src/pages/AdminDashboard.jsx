@@ -6,7 +6,8 @@ import {
   BarChart3,
   Users,
   LogOut,
-  Menu
+  Menu,
+  Wrench // ✅ icono correcto
 } from "lucide-react"
 
 import Home from "./admin/Dashboard"
@@ -15,6 +16,7 @@ import InventarioSucursal from "./admin/InventarioSucursal"
 import InventarioGeneral from "./admin/InventarioGeneral"
 import MovimientosGeneral from "./admin/MovimientosGeneral"
 import Usuarios from "./admin/Usuarios"
+import Mantenimiento from "./admin/Mantenimiento"
 
 function AdminDashboard({ logout }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -106,6 +108,19 @@ function AdminDashboard({ logout }) {
             Sucursales
           </div>
 
+          {/* 🆕 MANTENIMIENTO */}
+          <div
+            className={itemClass("mantenimiento")}
+            onClick={() => {
+              setSection("mantenimiento")
+              setSucursalSeleccionada(null)
+              setIsOpen(false)
+            }}
+          >
+            <Wrench size={18} />
+            Mantenimiento
+          </div>
+
           <div
             className={itemClass("inventarioGeneral")}
             onClick={() => {
@@ -178,6 +193,8 @@ function AdminDashboard({ logout }) {
             volver={() => setSucursalSeleccionada(null)}
           />
         )}
+
+        {section === "mantenimiento" && <Mantenimiento />}
 
         {section === "inventarioGeneral" && <InventarioGeneral />}
         {section === "movimientos" && <MovimientosGeneral />}

@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react"
 import { apiFetch } from "../../Services/api"
 
-function InventarioSucursalInventario({ sucursal }) {
+function InventarioSucursalInventario({ sucursal, soloLectura = false }) {
   const [inventario, setInventario] = useState([])
   const [productos, setProductos] = useState([])
   const [producto, setProducto] = useState("")
   const [cantidad, setCantidad] = useState("")
 
-  // Cargar inventario de la sucursal
+  // =========================
+  // Cargar inventario
+  // =========================
   useEffect(() => {
     if (!sucursal?._id) return
 
@@ -23,7 +25,9 @@ function InventarioSucursalInventario({ sucursal }) {
     fetchInventario()
   }, [sucursal?._id])
 
+  // =========================
   // Cargar productos
+  // =========================
   useEffect(() => {
     const fetchProductos = async () => {
       try {
@@ -37,8 +41,12 @@ function InventarioSucursalInventario({ sucursal }) {
     fetchProductos()
   }, [])
 
+  // =========================
+  // Agregar producto
+  // =========================
   const handleAgregar = async (e) => {
     e.preventDefault()
+
     if (!producto || !cantidad) return
 
     try {
@@ -64,52 +72,59 @@ function InventarioSucursalInventario({ sucursal }) {
 
   return (
     <div>
-      {/* FORMULARIO */}
-      <form
-        onSubmit={handleAgregar}
-        className="bg-slate-800 p-4 rounded-xl mb-6"
-      >
-        <h2 className="text-white font-bold mb-2">
-          Agregar producto a {sucursal.nombre}
-        </h2>
-
-        <select
-          className="w-full mb-2 p-2 rounded bg-white text-slate-700 border border-slate-300"
-          value={producto}
-          onChange={(e) => setProducto(e.target.value)}
-          required
+      {/* =========================
+          FORMULARIO
+         ========================= */}
+      {!soloLectura && (
+        <form
+          onSubmit={handleAgregar}
+          className="bg-slate-800 p-4 rounded-xl mb-6"
         >
-          <option value="">Selecciona un producto</option>
-          {productos.map((p) => (
-            <option key={p._id} value={p._id}>
-              {p.nombre} ({p.codigo})
-            </option>
-          ))}
-        </select>
+          <h2 className="text-white font-bold mb-2">
+            Agregar producto a {sucursal.nombre}
+          </h2>
 
-        <input
-          type="number"
-          placeholder="Cantidad"
-          className="
-            w-full mb-2 p-2 rounded
-            bg-white text-slate-800
-            border border-slate-300
-            placeholder-slate-400
-            focus:outline-none
-            focus:ring-2 focus:ring-blue-500
-          "
-          value={cantidad}
-          onChange={(e) => setCantidad(e.target.value)}
-          required
-          min={1}
-        />
+          <select
+            className="w-full mb-2 p-2 rounded bg-white text-slate-700 border border-slate-300"
+            value={producto}
+            onChange={(e) => setProducto(e.target.value)}
+            required
+          >
+            <option value="">Selecciona un producto</option>
 
-        <button className="w-full bg-blue-500/40 text-white py-2 rounded">
-          Agregar Producto
-        </button>
-      </form>
+            {productos.map((p) => (
+              <option key={p._id} value={p._id}>
+                {p.nombre} ({p.codigo})
+              </option>
+            ))}
+          </select>
 
-      {/* TABLA */}
+          <input
+            type="number"
+            placeholder="Cantidad"
+            className="
+              w-full mb-2 p-2 rounded
+              bg-white text-slate-800
+              border border-slate-300
+              placeholder-slate-400
+              focus:outline-none
+              focus:ring-2 focus:ring-blue-500
+            "
+            value={cantidad}
+            onChange={(e) => setCantidad(e.target.value)}
+            min={1}
+            required
+          />
+
+          <button className="w-full bg-blue-500/40 text-white py-2 rounded">
+            Agregar Producto
+          </button>
+        </form>
+      )}
+
+      {/* =========================
+          TABLA
+         ========================= */}
       <div className="overflow-x-auto">
         <table className="min-w-full border border-slate-700 text-left text-black">
           <thead className="bg-slate-700 text-white">
@@ -123,36 +138,41 @@ function InventarioSucursalInventario({ sucursal }) {
           </thead>
 
           <tbody>
-            {inventario.map((item) => (
-              <tr
-                key={item._id}
-                className={`border-b border-slate-700 ${
-                  item.cantidad === 0
-                    ? "bg-red-900/40 text-red-900"
-                    : ""
-                }`}
-              >
-                <td className="p-2 border-r border-slate-600">
-                  {item.producto?.codigo || "—"}
-                </td>
+            {inventario
+              // 🔧 FILTRO: ocultar ceros SOLO en mantenimiento
+              .filter(
+                (item) => !(soloLectura && item.cantidad === 0)
+              )
+              .map((item) => (
+                <tr
+                  key={item._id}
+                  className={`border-b border-slate-700 ${
+                    item.cantidad === 0
+                      ? "bg-red-900/40 text-red-900"
+                      : ""
+                  }`}
+                >
+                  <td className="p-2 border-r border-slate-600">
+                    {item.producto?.codigo || "—"}
+                  </td>
 
-                <td className="p-2 border-r border-slate-600">
-                  {item.producto?.nombre || "N/A"}
-                </td>
+                  <td className="p-2 border-r border-slate-600">
+                    {item.producto?.nombre || "N/A"}
+                  </td>
 
-                <td className="p-2 border-r border-slate-600">
-                  {item.producto?.caracteristicas || "—"}
-                </td>
+                  <td className="p-2 border-r border-slate-600">
+                    {item.producto?.caracteristicas || "—"}
+                  </td>
 
-                <td className="p-2 border-r border-slate-600">
-                  {item.producto?.modelo || "N/A"}
-                </td>
+                  <td className="p-2 border-r border-slate-600">
+                    {item.producto?.modelo || "N/A"}
+                  </td>
 
-                <td className="p-2 font-bold"translate="no">
-                  {item.cantidad === 0 ? "SIN STOCK" : item.cantidad}
-                </td>
-              </tr>
-            ))}
+                  <td className="p-2 font-bold" translate="no">
+                    {item.cantidad === 0 ? "SIN STOCK" : item.cantidad}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
