@@ -47,7 +47,9 @@ function InventarioGeneral() {
       setInventario(data)
       setProductos(prod)
       setSucursales(suc)
+
     } catch (err) {
+      console.error(err)
       alert("Error al cargar inventario")
     } finally {
       setLoading(false)
@@ -75,21 +77,36 @@ function InventarioGeneral() {
   // Filtrar inventario
   // =========================
   const inventarioFiltrado = () => {
-    let data = [...inventario]
+  let data = [...inventario]
 
-    if (productoId) {
-      data = data.filter(i => i.producto?._id === productoId)
-    }
-
-    if (sucursalSeleccionada) {
-      data = data.filter(i => i.sucursal?._id === sucursalSeleccionada)
-    }
-
-    return data
+  // filtro por producto
+  if (productoId) {
+    data = data.filter(i => i.producto?._id === productoId)
   }
 
+  // filtro por sucursal seleccionada
+  if (sucursalSeleccionada) {
+    data = data.filter(i => i.sucursal?._id === sucursalSeleccionada)
+  }
+
+  // ocultar SIN STOCK solo en mantenimiento
+  data = data.filter(i => {
+    const nombreSucursal = i.sucursal?.nombre
+      ?.toLowerCase()
+      .trim()
+
+    return !(
+      i.cantidad === 0 &&
+      nombreSucursal === "mantenimiento"
+    )
+  })
+
+  return data
+}
+
+
   // =========================
-  // Exportar Excel (solo stock)
+  // Exportar Excel (solo con stock)
   // =========================
   const exportarExcel = () => {
     const data = inventarioFiltrado()
@@ -116,6 +133,7 @@ function InventarioGeneral() {
   // =========================
   const guardarCambios = async () => {
     try {
+
       await apiFetch(`/productos/codigo/${editando.producto.codigo}`, {
         method: "PUT",
         body: JSON.stringify({
@@ -124,7 +142,8 @@ function InventarioGeneral() {
         })
       })
 
-      const diferencia = Number(formEdit.cantidad) - editando.cantidad
+      const diferencia =
+        Number(formEdit.cantidad) - editando.cantidad
 
       if (diferencia > 0) {
         await apiFetch("/inventario/entrada", {
@@ -150,7 +169,9 @@ function InventarioGeneral() {
 
       setEditando(null)
       cargarInventario()
-    } catch {
+
+    } catch (err) {
+      console.error(err)
       alert("Error al guardar cambios")
     }
   }
@@ -159,16 +180,26 @@ function InventarioGeneral() {
   // Eliminar
   // =========================
   const eliminarProducto = async item => {
+
     if (!confirm(`¿Eliminar "${item.producto?.nombre}" de ${item.sucursal?.nombre}?`))
       return
 
-    await apiFetch(`/inventario/item/${item._id}`, {
-      method: "DELETE"
-    })
+    try {
+      await apiFetch(`/inventario/item/${item._id}`, {
+        method: "DELETE"
+      })
 
-    cargarInventario()
+      cargarInventario()
+
+    } catch (err) {
+      console.error(err)
+      alert("Error al eliminar")
+    }
   }
 
+  // =========================
+  // Loading
+  // =========================
   if (loading) {
     return <p className="text-slate-500">Cargando inventario...</p>
   }
@@ -242,7 +273,7 @@ function InventarioGeneral() {
       {/* TABLA */}
       <table className="min-w-full border border-slate-700 text-center">
 
-        <thead className="bg-amber-400/40">
+        <thead className="bg-amber-400/40 text-slate-900">
           <tr>
             <th>Código</th>
             <th>Nombre</th>
@@ -256,67 +287,64 @@ function InventarioGeneral() {
 
         <tbody>
 
-          {inventarioFiltrado()
-            .filter(i => {
-              // OCULTAR sin stock SOLO en Mantenimiento
-              if (
-                i.cantidad === 0 &&
-                i.sucursal?.nombre === "Mantenimiento"
-              ) {
-                return false
-              }
-              return true
-            })
-            .map(i => (
+          {inventarioFiltrado().length === 0 && (
+            <tr>
+              <td colSpan="7" className="p-4 text-slate-400">
+                No hay resultados
+              </td>
+            </tr>
+          )}
 
-              <tr
-                key={i._id}
-                className={`border-b transition
-                  ${i.cantidad === 0
-                    ? "bg-red-900/30 text-red-800 font-semibold"
-                    : "hover:bg-slate-100 text-slate-800"}
-                `}
-              >
+          {inventarioFiltrado().map(i => (
 
-                <td>{i.producto?.codigo}</td>
-                <td>{i.producto?.nombre}</td>
-                <td>{i.producto?.caracteristicas}</td>
+            <tr
+              key={i._id}
+              className={`border-b transition
+                ${i.cantidad === 0
+                  ? "bg-red-900/30 text-red-800 font-semibold"
+                  : "hover:bg-slate-100 text-slate-800"}
+              `}
+            >
 
-                <td className="font-bold">
-                  {i.cantidad === 0 ? "SIN STOCK" : i.cantidad}
-                </td>
+              <td>{i.producto?.codigo}</td>
+              <td>{i.producto?.nombre}</td>
+              <td>{i.producto?.caracteristicas}</td>
 
-                <td>{i.sucursal?.nombre}</td>
-                <td>${i.producto?.precio}</td>
+              <td className="font-bold">
+                {i.cantidad === 0 ? "SIN STOCK" : i.cantidad}
+              </td>
 
-                <td className="flex justify-center gap-2 p-2">
+              <td>{i.sucursal?.nombre}</td>
+              <td>${i.producto?.precio}</td>
 
-                  <button
-                    onClick={() => {
-                      setEditando(i)
-                      setFormEdit({
-                        caracteristicas: i.producto.caracteristicas,
-                        precio: i.producto.precio,
-                        cantidad: i.cantidad
-                      })
-                    }}
-                    className="p-2 rounded-lg bg-blue-600 text-white"
-                  >
-                    <Pencil size={18} />
-                  </button>
+              <td className="flex justify-center gap-2 p-2">
 
-                  <button
-                    onClick={() => eliminarProducto(i)}
-                    className="p-2 rounded-lg bg-red-600 text-white"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                <button
+                  onClick={() => {
+                    setEditando(i)
+                    setFormEdit({
+                      caracteristicas: i.producto.caracteristicas,
+                      precio: i.producto.precio,
+                      cantidad: i.cantidad
+                    })
+                  }}
+                  className="p-2 rounded-lg bg-blue-600 text-white"
+                >
+                  <Pencil size={18} />
+                </button>
 
-                </td>
+                <button
+                  onClick={() => eliminarProducto(i)}
+                  className="p-2 rounded-lg bg-red-600 text-white"
+                >
+                  <Trash2 size={18} />
+                </button>
 
-              </tr>
+              </td>
 
-            ))}
+            </tr>
+
+          ))}
 
         </tbody>
 
