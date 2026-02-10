@@ -4,6 +4,7 @@ import { Pencil, Boxes, Trash2 } from "lucide-react"
 import * as XLSX from "xlsx"
 
 function InventarioGeneral() {
+
   const [inventario, setInventario] = useState([])
   const [productos, setProductos] = useState([])
   const [sucursales, setSucursales] = useState([])
@@ -16,17 +17,22 @@ function InventarioGeneral() {
 
   // edición
   const [editando, setEditando] = useState(null)
+
   const [formEdit, setFormEdit] = useState({
+    nombre: "",
     caracteristicas: "",
     precio: "",
-    cantidad: ""
+    cantidad: "",
+    sucursal: ""
   })
+
 
   // =========================
   // Cargar inventario
   // =========================
   const cargarInventario = async () => {
     try {
+
       setLoading(true)
 
       const data = await apiFetch("/inventario")
@@ -35,6 +41,7 @@ function InventarioGeneral() {
       const suc = []
 
       data.forEach(i => {
+
         if (i.producto && !prod.find(p => p._id === i.producto._id)) {
           prod.push(i.producto)
         }
@@ -42,6 +49,7 @@ function InventarioGeneral() {
         if (i.sucursal && !suc.find(s => s._id === i.sucursal._id)) {
           suc.push(i.sucursal)
         }
+
       })
 
       setInventario(data)
@@ -56,14 +64,18 @@ function InventarioGeneral() {
     }
   }
 
+
   useEffect(() => {
     cargarInventario()
   }, [])
+
+
 
   // =========================
   // Buscar producto
   // =========================
   const handleProductoChange = value => {
+
     setProductoTexto(value)
 
     const encontrado = productos.find(
@@ -73,118 +85,161 @@ function InventarioGeneral() {
     setProductoId(encontrado ? encontrado._id : "")
   }
 
+
+
   // =========================
   // Filtrar inventario
   // =========================
   const inventarioFiltrado = () => {
-  let data = [...inventario]
 
-  // filtro por producto
-  if (productoId) {
-    data = data.filter(i => i.producto?._id === productoId)
+    let data = [...inventario]
+
+    if (productoId) {
+      data = data.filter(i => i.producto?._id === productoId)
+    }
+
+    if (sucursalSeleccionada) {
+      data = data.filter(i => i.sucursal?._id === sucursalSeleccionada)
+    }
+
+    // ocultar mantenimiento sin stock
+    data = data.filter(i => {
+
+      const nombre = i.sucursal?.nombre
+        ?.toLowerCase()
+        .trim()
+
+      return !(
+        nombre === "mantenimiento" &&
+        i.cantidad === 0
+      )
+    })
+
+    return data
   }
 
-  // filtro por sucursal seleccionada
-  if (sucursalSeleccionada) {
-    data = data.filter(i => i.sucursal?._id === sucursalSeleccionada)
-  }
-
-  // ocultar SIN STOCK solo en mantenimiento
-  data = data.filter(i => {
-    const nombreSucursal = i.sucursal?.nombre
-      ?.toLowerCase()
-      .trim()
-
-    return !(
-      i.cantidad === 0 &&
-      nombreSucursal === "mantenimiento"
-    )
-  })
-
-  return data
-}
 
 
   // =========================
-  // Exportar Excel (solo con stock)
+  // Exportar Excel
   // =========================
   const exportarExcel = () => {
+
     const data = inventarioFiltrado()
       .filter(i => i.cantidad > 0)
       .map(i => ({
-        Codigo: i.producto?.codigo || "",
-        Nombre: i.producto?.nombre || "",
-        Caracteristicas: i.producto?.caracteristicas || "",
+        Codigo: i.producto?.codigo,
+        Nombre: i.producto?.nombre,
+        Caracteristicas: i.producto?.caracteristicas,
         Cantidad: i.cantidad,
-        Sucursal: i.sucursal?.nombre || "",
-        Precio: i.producto?.precio || ""
+        Sucursal: i.sucursal?.nombre,
+        Precio: i.producto?.precio
       }))
 
-    const worksheet = XLSX.utils.json_to_sheet(data)
-    const workbook = XLSX.utils.book_new()
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario")
+    XLSX.utils.book_append_sheet(wb, ws, "Inventario")
 
-    XLSX.writeFile(workbook, "inventario.xlsx")
+    XLSX.writeFile(wb, "inventario.xlsx")
   }
+
+
 
   // =========================
   // Guardar cambios
   // =========================
   const guardarCambios = async () => {
+
     try {
 
+      // actualizar producto
       await apiFetch(`/productos/codigo/${editando.producto.codigo}`, {
         method: "PUT",
         body: JSON.stringify({
+          nombre: formEdit.nombre,
           caracteristicas: formEdit.caracteristicas,
           precio: Number(formEdit.precio)
         })
       })
 
-      const diferencia =
-        Number(formEdit.cantidad) - editando.cantidad
 
+      // transferencia si cambia sucursal
+      if (formEdit.sucursal !== editando.sucursal._id) {
+
+        await apiFetch("/inventario/transferir", {
+          method: "POST",
+          body: JSON.stringify({
+            producto: editando.producto._id,
+            sucursalOrigen: editando.sucursal._id,
+            sucursalDestino: formEdit.sucursal,
+            cantidad: editando.cantidad
+          })
+        })
+      }
+
+
+      // recalcular diferencia
+      const base =
+        formEdit.sucursal !== editando.sucursal._id
+          ? 0
+          : editando.cantidad
+
+      const diferencia =
+        Number(formEdit.cantidad) - base
+
+
+      // entrada
       if (diferencia > 0) {
+
         await apiFetch("/inventario/entrada", {
           method: "POST",
           body: JSON.stringify({
-            sucursal: editando.sucursal._id,
+            sucursal: formEdit.sucursal,
             producto: editando.producto._id,
             cantidad: diferencia
           })
         })
       }
 
+
+      // salida
       if (diferencia < 0) {
+
         await apiFetch("/inventario/salida", {
           method: "POST",
           body: JSON.stringify({
-            sucursal: editando.sucursal._id,
+            sucursal: formEdit.sucursal,
             producto: editando.producto._id,
             cantidad: Math.abs(diferencia)
           })
         })
       }
 
+
       setEditando(null)
       cargarInventario()
 
     } catch (err) {
+
       console.error(err)
-      alert("Error al guardar cambios")
+      alert("Error al guardar")
+
     }
   }
+
+
 
   // =========================
   // Eliminar
   // =========================
   const eliminarProducto = async item => {
 
-    if (!confirm(`¿Eliminar "${item.producto?.nombre}" de ${item.sucursal?.nombre}?`))
+    if (!confirm(`¿Eliminar "${item.producto?.nombre}"?`))
       return
 
     try {
+
       await apiFetch(`/inventario/item/${item._id}`, {
         method: "DELETE"
       })
@@ -192,29 +247,37 @@ function InventarioGeneral() {
       cargarInventario()
 
     } catch (err) {
+
       console.error(err)
       alert("Error al eliminar")
+
     }
   }
 
-  // =========================
-  // Loading
-  // =========================
+
+
   if (loading) {
     return <p className="text-slate-500">Cargando inventario...</p>
   }
 
+
+
   return (
     <div>
 
+
       {/* TITULO */}
       <div className="mb-6 flex items-center gap-3">
+
         <Boxes size={30} className="text-blue-600" />
 
         <h1 className="text-3xl font-bold text-slate-800">
           Inventario General
         </h1>
+
       </div>
+
+
 
       {/* FILTROS */}
       <div className="flex flex-wrap gap-4 mb-6">
@@ -236,11 +299,13 @@ function InventarioGeneral() {
           ))}
         </datalist>
 
+
         <select
           value={sucursalSeleccionada}
           onChange={e => setSucursalSeleccionada(e.target.value)}
           className="p-2 rounded bg-slate-800 text-white min-w-[220px]"
         >
+
           <option value="">Todas</option>
 
           {sucursales.map(s => (
@@ -248,7 +313,9 @@ function InventarioGeneral() {
               {s.nombre}
             </option>
           ))}
+
         </select>
+
 
         <button
           onClick={() => {
@@ -261,6 +328,7 @@ function InventarioGeneral() {
           Limpiar
         </button>
 
+
         <button
           onClick={exportarExcel}
           className="px-4 py-2 bg-blue-600 rounded text-white"
@@ -269,6 +337,8 @@ function InventarioGeneral() {
         </button>
 
       </div>
+
+
 
       {/* TABLA */}
       <table className="min-w-full border border-slate-700 text-center">
@@ -284,6 +354,7 @@ function InventarioGeneral() {
             <th>Acciones</th>
           </tr>
         </thead>
+
 
         <tbody>
 
@@ -317,21 +388,28 @@ function InventarioGeneral() {
               <td>{i.sucursal?.nombre}</td>
               <td>${i.producto?.precio}</td>
 
+
               <td className="flex justify-center gap-2 p-2">
 
                 <button
                   onClick={() => {
+
                     setEditando(i)
+
                     setFormEdit({
+                      nombre: i.producto.nombre,
                       caracteristicas: i.producto.caracteristicas,
                       precio: i.producto.precio,
-                      cantidad: i.cantidad
+                      cantidad: i.cantidad,
+                      sucursal: i.sucursal._id
                     })
+
                   }}
                   className="p-2 rounded-lg bg-blue-600 text-white"
                 >
                   <Pencil size={18} />
                 </button>
+
 
                 <button
                   onClick={() => eliminarProducto(i)}
@@ -350,8 +428,11 @@ function InventarioGeneral() {
 
       </table>
 
+
+
       {/* MODAL */}
       {editando && (
+
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
 
           <div className="bg-white p-6 rounded w-96">
@@ -360,8 +441,45 @@ function InventarioGeneral() {
               Editar producto
             </h2>
 
+
             <input
               className="w-full p-2 border mb-2"
+              placeholder="Nombre"
+              value={formEdit.nombre}
+              onChange={e =>
+                setFormEdit({
+                  ...formEdit,
+                  nombre: e.target.value
+                })
+              }
+            />
+
+
+            <select
+              className="w-full p-2 border mb-2"
+              value={formEdit.sucursal}
+              onChange={e =>
+                setFormEdit({
+                  ...formEdit,
+                  sucursal: e.target.value
+                })
+              }
+            >
+
+              <option value="">Sucursal</option>
+
+              {sucursales.map(s => (
+                <option key={s._id} value={s._id}>
+                  {s.nombre}
+                </option>
+              ))}
+
+            </select>
+
+
+            <input
+              className="w-full p-2 border mb-2"
+              placeholder="Características"
               value={formEdit.caracteristicas}
               onChange={e =>
                 setFormEdit({
@@ -371,9 +489,11 @@ function InventarioGeneral() {
               }
             />
 
+
             <input
-              className="w-full p-2 border mb-2"
               type="number"
+              className="w-full p-2 border mb-2"
+              placeholder="Precio"
               value={formEdit.precio}
               onChange={e =>
                 setFormEdit({
@@ -383,17 +503,20 @@ function InventarioGeneral() {
               }
             />
 
+
             <input
-              className="w-full p-2 border mb-4"
               type="number"
+              className="w-full p-2 border mb-4"
+              placeholder="Cantidad"
               value={formEdit.cantidad}
               onChange={e =>
                 setFormEdit({
                   ...formEdit,
-                  cantidad: Number(e.target.value)
+                  cantidad: e.target.value
                 })
               }
             />
+
 
             <div className="flex justify-end gap-2">
 
@@ -403,6 +526,7 @@ function InventarioGeneral() {
               >
                 Cancelar
               </button>
+
 
               <button
                 onClick={guardarCambios}
@@ -416,6 +540,7 @@ function InventarioGeneral() {
           </div>
 
         </div>
+
       )}
 
     </div>
